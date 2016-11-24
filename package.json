@@ -1,0 +1,18 @@
+{
+  "name": "sparky-sdk",
+  "version": "1.0.0",
+  "description": "Methods and wrappers for Watson services with TJBot",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Jeff Arn",
+  "license": "ISC",
+  "dependencies": {
+    "dotenv": "^2.0.0",
+    "johnny-five": "^0.10.6",
+    "mic": "^2.1.1",
+    "raspicam": "^0.2.13",
+    "watson-developer-cloud": "^2.9.0"
+  }
+}
