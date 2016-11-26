@@ -5,7 +5,10 @@ var tone    	 = require('./lib/tone_analyzer'),
 	mic	    	 = require('mic'),
 	conversation = require('./lib/conversation'),
 	tts 		 = require('./lib/tts'),
-	fs 	    	 = require('fs');
+	fs 	    	 = require('fs'),
+	math         = require('./plugins/math'),
+	LED			 = require('./peripherals/led'),
+	io			 = require('socket.io-emitter')({host: 'localhost', port: 6379});
 
 /******
 *
@@ -26,6 +29,8 @@ var speech_to_text = watson.speech_to_text({
     password: process.env.STT_PASSWORD,
     version: 'v1'
 });
+
+var mathOps = ['add', 'subtract', 'divide', 'multiply'];
 
 
 /*************************
@@ -54,11 +59,18 @@ micInputStream.on('error', function(err) {
     console.log("Error in Input Stream: " + err);
 });
 
+micInputStream.on('pause', function(err) {
+
+});
+
 micInputStream.on('silence', function() {
     // detect silence.
 });
 
 micInstance.start();
+
+LED.init('white');
+
 console.log('TJBot is listening');
 
 var textStream = micInputStream.pipe(
@@ -84,21 +96,50 @@ textStream.on('data', function(str) {
 
 	if (stringContains(str, visRecWord)) {
 		// need module for camera
-
+		tts.speak("Ok, taking a picture");
 		
 
 		// then call vis rec with the file output from camera
 
 	} else if (stringContains(str, attentionWord)) {
+
 		let message = str.toLowerCase().replace(attentionWord.toLowerCase(), '');
+
+		io.emit(message);
 		
 		// Send Res to conversation through conversation promise
 		conversation.talkBack(message)
 			.then(function(results) {
 				console.log(results);
-				
+
+				let response = '';
+
+				// TODO: get a better router for math and other plugins
+				for (x in mathOps) {
+					
+					if (results.intents[0].intent == mathOps[x]) {
+						
+						// Pass number values in entities to math
+						// plugin
+						let answer = math.basic(
+							results.intents[0].intent,
+							results.entities[0].value,
+							results.entities[1].value);
+
+						response = results.output.text[0] + ' ' + String(answer);
+
+						break;
+
+					} else {
+						response = results.output.text[0];
+					}
+				}
+
 				// Speak the results from conversation
-				tts.speak(results);
+				tts.speak(response);
+				io.emit(response);
+
+
 			})
 			.catch(function(reason) {
 				console.log(reason);
